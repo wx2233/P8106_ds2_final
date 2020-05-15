@@ -22,6 +22,7 @@ library(kableExtra)
 
 
 # Load data
+
 ```{r}
 # import data
 heart = read_csv("heart.csv") 
@@ -97,20 +98,61 @@ rowTrain <- createDataPartition(y = data$target,
                                 list = FALSE)
 ```
 
-## Tree
-
 ```{r classification tree, fig.width=7, fig.height=4}
 set.seed(123)
 ctrl <- trainControl(method = "repeatedcv", summaryFunction = twoClassSummary, classProbs = TRUE)
+```
 
+# GLM
+
+```{r}
+glmnGrid = expand.grid(.alpha = seq(0,1,length = 6),
+                       .lambda = exp(seq(-8,-2,length = 20)))
+set.seed(123)
+
+glmn.fit.c <- train(target~., data=data[rowTrain,], 
+                     method = "glmnet",
+                     tuneGrid = glmnGrid,
+                     metric = "ROC",
+                     trControl = ctrl)
+
+plot(glmn.fit.c, xTrans = function(x) log(x))
+
+glmn.fit.c$bestTune
+
+glmn.pred = predict(glmn.fit.c , newdata = data[-rowTrain,],type = "prob")[,2]
+```
+
+# KNN
+
+```{r}
+set.seed(123)
+
+knn.fit.c <- train(target~., data=data[rowTrain,], 
+                   method = "knn",
+                   preProcess = c("center", "scale"),
+                   tuneGrid = data.frame(k = seq(1,150,by = 5)),
+                   trControl = ctrl)
+
+plot(knn.fit.c)
+
+knn.pred = predict(knn.fit.c, newdata = data[-rowTrain,],type = "prob")[,2]
+```
+
+## Tree (tune over cp)
+
+```{r}
+set.seed(123)
 rpart.fit.c <- train(target~., data=data[rowTrain,], 
                      method = "rpart",
                      tuneGrid = data.frame(cp = exp(seq(-10, -5, len = 100))), 
                      trControl = ctrl,
                      metric = "ROC")
+
 ggplot(rpart.fit.c, highlight = TRUE)
-rpart.fit.c$finalModel$cptable
 rpart.plot(rpart.fit.c$finalModel)
+
+tree.pred = predict(rpart.fit.c, newdata = data[-rowTrain,],type = "prob")[,1]
 ```
 
 
@@ -133,6 +175,8 @@ rf.fit.c <- train(target~., data=data[rowTrain,],
                 importance = "impurity")
 ggplot(rf.fit.c, highlight = TRUE)
 rf.fit.c$bestTune
+
+rf.pred = predict(rf.fit.c, newdata = data[-rowTrain,],type = "prob")[,1]
 ```
 
 ```{r}
@@ -163,6 +207,8 @@ gbmB.fit <- train(target~., data=data[rowTrain,],
                  verbose = FALSE) 
 ggplot(gbmB.fit, highlight = TRUE)
 gbmB.fit$bestTune
+
+gbmB.pred = predict(gbmB.fit, newdata = data[-rowTrain,],type = "prob")[,1]
 ```
 
 ```{r}
@@ -189,6 +235,8 @@ svml.fit <- train(target~.,
                   tuneGrid = data.frame(cost = exp(seq(-5,1,len=20))), 
                   trControl = ctrl)
 ggplot(svml.fit, highlight = TRUE)
+
+svml.pred = predict(svml.fit, newdata = data[-rowTrain,],type = "prob")[,1]
 ```
 
 ### Radial kernel
@@ -204,8 +252,37 @@ svmr.fit <- train(target~.,
                   preProcess = c("center", "scale"), tuneGrid = svmr.grid,
                   trControl = ctrl)
 ggplot(svmr.fit, highlight = TRUE) 
+
+svmr.pred = predict(svmr.fit, newdata = data[-rowTrain,],type = "prob")[,1]
 ```
 
+# ROC curve
+
+```{r}
+glm.roc = roc(data$target[-rowTrain], glmn.pred)
+knn.roc = roc(data$target[-rowTrain], knn.pred)
+tree.roc = roc(data$target[-rowTrain], tree.pred)
+gbmB.roc = roc(data$target[-rowTrain], gbmB.pred)
+rf.roc = roc(data$target[-rowTrain], rf.pred)
+svml.roc = roc(data$target[-rowTrain], svml.pred)
+svmr.roc = roc(data$target[-rowTrain], svmr.pred)
+
+plot(glm.roc)
+plot(knn.roc, add = TRUE, col = 2)
+plot(tree.roc, add = TRUE, col = 3)
+plot(gbmB.roc, add = TRUE, col = 4)
+plot(rf.roc, add = TRUE, col = 5)
+plot(svml.roc, add = TRUE, col = 6)
+plot(svmr.roc, add = TRUE, col = 7)
+
+
+auc <- c(glm.roc$auc[1], knn.roc$auc[1], tree.roc$auc[1],
+         gbmB.roc$auc[1], rf.roc$auc[1], svml.roc$auc[1], svmr.roc$auc[1])
+
+modelNames <- c("glm","knn","tree","gbmB","rf","svml", "svmr")
+legend("bottomright", legend = paste0(modelNames, ": ", round(auc,3)),
+       col = 1:7, lwd = 2)
+```
 
 ### Test model performance in test data
 
@@ -229,7 +306,7 @@ svml_error_rate = mean(data[-rowTrain,]$target != pred.svml, type = "raw")
 
 ```{r}
 set.seed(123)
-resamp <- resamples(list(svml = svml.fit, svmr = svmr.fit, boost = gbmB.fit,randomforest = rf.fit.c, tree = rpart.fit.c)) 
+resamp <- resamples(list(knn = knn.fit.c,glm = glmn.fit.c, svml = svml.fit, svmr = svmr.fit, boost = gbmB.fit,randomforest = rf.fit.c, tree = rpart.fit.c)) 
 bwplot(resamp)
 ```
 
