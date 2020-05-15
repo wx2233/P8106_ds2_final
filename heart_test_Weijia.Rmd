@@ -1,0 +1,242 @@
+---
+title: "data_test_Weijia"
+author: "Weijia Xiong"
+date: "5/15/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,message = FALSE,warning = FALSE)
+library(tidyverse)
+library(caret)
+library(rpart.plot)
+library(MASS)
+library(pROC)
+library(tidyverse)
+library(AppliedPredictiveModeling)
+library(DataExplorer)
+library(ggthemes)
+library(GGally)
+library(kableExtra)
+```
+
+
+# Load data
+```{r}
+# import data
+heart = read_csv("heart.csv") 
+
+data = heart %>% 
+  mutate(sex = if_else(sex == 1, "male", "female"),
+         fbs = if_else(fbs == 1, ">120", "<=120"),
+         exang = if_else(exang == 1, "yes" ,"no"),
+         target = if_else(target == 1, "yes", "no"),
+         cp = case_when(
+           cp == 3 ~ "typical angina",
+           cp == 1 ~ "atypical angina",
+           cp == 2 ~ "non-anginal",
+           cp == 0 ~ "asymptomatic angina"
+                            ),
+         restecg = case_when(
+           restecg == 0 ~ "hypertrophy",
+           restecg == 1 ~ "normal",
+           restecg == 2 ~ "wave abnormality"
+                                  ),
+        slope = case_when(
+          slope == 2 ~ "upsloping",
+          slope == 1 ~ "flat",
+          slope == 0 ~ "downsloping"
+        ),
+        thal = case_when(
+          thal == 1 ~ "fixed defect",
+          thal == 2 ~ "normal",
+          thal == 3 ~ "reversable defect"
+        ),
+         cp = as.factor(cp),
+         restecg = as.factor(restecg),
+         slope = as.factor(slope),
+         ca = as.factor(ca),
+         thal = as.factor(thal)
+         ) %>% 
+  mutate_if(is.character, as.factor) %>% 
+  dplyr::select(target, sex, fbs, exang, cp, restecg, slope, ca, thal, everything()) %>% 
+  na.omit()
+```
+
+# Exploratory analysis/visualization
+
+```{r}
+
+theme1 <- transparentTheme(trans = .4)
+theme1$strip.background$col <- rgb(.0, .6, .2, .2) 
+trellis.par.set(theme1)
+
+featurePlot(x = data[, 10:14],
+            y = data$target,
+            scales = list(x=list(relation="free"),
+                          y=list(relation="free")), 
+            plot = "density", pch = "|",
+            auto.key = list(columns = 2))
+
+```
+
+
+```{r}
+#ggpairs(data[,1:9])
+plot_bar(data,ggtheme = theme_classic())
+```
+
+
+# Models
+
+```{r}
+# train test set partition
+set.seed(123)
+rowTrain <- createDataPartition(y = data$target,
+                                p = 0.75,
+                                list = FALSE)
+```
+
+## Tree
+
+```{r classification tree, fig.width=7, fig.height=4}
+set.seed(123)
+ctrl <- trainControl(method = "repeatedcv", summaryFunction = twoClassSummary, classProbs = TRUE)
+
+rpart.fit.c <- train(target~., data=data[rowTrain,], 
+                     method = "rpart",
+                     tuneGrid = data.frame(cp = exp(seq(-10, -5, len = 100))), 
+                     trControl = ctrl,
+                     metric = "ROC")
+ggplot(rpart.fit.c, highlight = TRUE)
+rpart.fit.c$finalModel$cptable
+rpart.plot(rpart.fit.c$finalModel)
+```
+
+
+```{r}
+# error rate
+tree_error_rate = mean(data[-rowTrain,]$target != predict(rpart.fit.c, newdata = data[-rowTrain,], type = "raw"))
+```
+
+## Random Forest
+```{r random forests}
+rf.grid <- expand.grid(mtry = 1:6, 
+                       splitrule = "gini",
+                       min.node.size = 1:6)
+set.seed(123)
+rf.fit.c <- train(target~., data=data[rowTrain,],
+                method = "ranger",
+                tuneGrid = rf.grid,
+                metric = "ROC",
+                trControl = ctrl,
+                importance = "impurity")
+ggplot(rf.fit.c, highlight = TRUE)
+rf.fit.c$bestTune
+```
+
+```{r}
+# variable importance
+barplot(sort(ranger::importance(rf.fit.c$finalModel), decreasing = FALSE), 
+        las = 2, horiz = TRUE, cex.names = 0.7,
+        col = colorRampPalette(colors = c("cyan","blue"))(8))
+```
+
+```{r}
+# error rate
+rf_error_rate = mean(data[-rowTrain,]$target != predict(rf.fit.c, newdata = data[-rowTrain,], type = "raw"))
+```
+
+## Boosting
+```{r boosting}
+gbmB.grid <- expand.grid(n.trees = c(2000,3000,4000), 
+                         interaction.depth = 1:6,
+                         shrinkage = c(0.001,0.003,0.005), 
+                         n.minobsinnode = 1)
+set.seed(123)
+gbmB.fit <- train(target~., data=data[rowTrain,],
+                 tuneGrid = gbmB.grid,
+                 trControl = ctrl,
+                 method = "gbm",
+                 distribution = "bernoulli",
+                 metric = "ROC",
+                 verbose = FALSE) 
+ggplot(gbmB.fit, highlight = TRUE)
+gbmB.fit$bestTune
+```
+
+```{r}
+# variable importance
+summary(gbmB.fit$finalModel, las = 2, cBars = 19, cex.names = 0.6)
+```
+
+```{r}
+# error rate
+boost_error_rate = mean(data[-rowTrain,]$target != predict(gbmB.fit, newdata = data[-rowTrain,], type = "raw"))
+```
+
+
+## Support vector machine
+
+### Linear kernel 
+
+```{r}
+set.seed(123)
+svml.fit <- train(target~.,
+                  data = data[rowTrain,],
+                  method = "svmLinear2",
+                  preProcess = c("center", "scale"),
+                  tuneGrid = data.frame(cost = exp(seq(-5,1,len=20))), 
+                  trControl = ctrl)
+ggplot(svml.fit, highlight = TRUE)
+```
+
+### Radial kernel
+
+```{r}
+svmr.grid <- expand.grid(C = exp(seq(-1,4,len=10)),
+                         sigma = exp(seq(-6,-2,len=10)))
+set.seed(123)
+svmr.fit <- train(target~., 
+                  data = data,
+                  subset = rowTrain,
+                  method = "svmRadial",
+                  preProcess = c("center", "scale"), tuneGrid = svmr.grid,
+                  trControl = ctrl)
+ggplot(svmr.fit, highlight = TRUE) 
+```
+
+
+### Test model performance in test data
+
+```{r}
+pred.svmr <- predict(svmr.fit, newdata = data[-rowTrain,])
+pred.svml <- predict(svml.fit, newdata = data[-rowTrain,]) 
+matr.svmr = confusionMatrix(data = pred.svmr,
+                reference = data$target[-rowTrain])
+matr.svml = confusionMatrix(data = pred.svml,
+                reference = data$target[-rowTrain])
+matr.svmr
+matr.svml
+
+
+svmr_error_rate = mean(data[-rowTrain,]$target != pred.svmr, type = "raw")
+svml_error_rate = mean(data[-rowTrain,]$target != pred.svml, type = "raw")
+```
+
+
+## Comparison of models
+
+```{r}
+set.seed(123)
+resamp <- resamples(list(svml = svml.fit, svmr = svmr.fit, boost = gbmB.fit,randomforest = rf.fit.c, tree = rpart.fit.c)) 
+bwplot(resamp)
+```
+
+The support vector machine model with linear kernel performs better with higher accuracy and kappa when checking their predictive ability with test data.
+
+
+```{r}
+#save.image(file='test_Weijia.RData')
+```
+
