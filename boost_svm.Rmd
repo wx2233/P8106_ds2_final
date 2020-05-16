@@ -1,0 +1,62 @@
+---
+title: "report_boost_svm"
+author: "Weijia Xiong"
+date: "5/16/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+load("test_Weijia.RData")
+```
+
+
+
+## Boosting
+
+In addition, we use boosting model for Heart data. Then we tune some parameters. We choose the number of trees from $(2000,3000,4000)$, the interaction depth from 1 to 6, and the shrinkage parameters $\lambda$ from $(0.001,0.003,0.005)$. And we fix the minimum number of observations in the terminal nodes of the trees 1.  From the plot we find that when the number of trees is 3000, the interaction depth is 6, the shrinkage equals 0.001, we get the largest ROC. The Accuracy of the best model from Boosting is 0.7867, Sensitivity is 0.8049 and Specificity is 0.7647.
+The test error rate is 0.2133.  
+
+
+```{r}
+ggplot(gbmB.fit, highlight = TRUE)
+```
+
+The following plot shows the variance importance. Here we can find that oldpeak is the most important variable while the fasting blood sugar is the least important variable.
+
+```{r}
+summary(gbmB.fit$finalModel, las = 2, cBars = 19, cex.names = 0.6)
+```
+
+
+
+## SVM
+
+Finally, we use support vector machine (both linear kernel and radical kernel model) to train the data. For linear kernel model, the tuning parameter cost $C$ is chose from $e^{-5}$ to $e$. When $C = 0.115568$, we gain the largest ROC. 
+
+```{r}
+ggplot(svml.fit, highlight = TRUE)
+```
+
+For radical kernel model, cost $C$ is chose from $e^{-1}$ to $e^4$, $\gamma$(sigma in the plot) is chose from $e^{-6}$ to $e^{-2}$. When $C = 31.32588, \gamma = 0.0094$, we gain the largest ROC. 
+
+```{r}
+ggplot(svmr.fit, highlight = TRUE)
+```
+
+The following table shows some results for two SVM models.
+```{r}
+matr %>% knitr::kable(
+    align = rep('c', 15),
+    longtable = F, 
+    booktabs = T, 
+    escape = T,
+    digit = 3
+  ) %>% 
+  kable_styling(
+    latex_options = c("hold_position","repeat_header")
+  )
+```
+
+
