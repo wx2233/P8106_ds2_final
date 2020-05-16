@@ -7,33 +7,34 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+load("test_Weijia.RData")
 ```
 
 # Introduction
 
 Heart disease is one of the leading cause of death for both men and women all over the world. Heart disease detection based on typical clinical features is being increasingly critical to population health. It is a desirable way to help people enhance self protection ability and prevent faults. In this report, we built several predictive models to predict the heart disease. 
 
-There are 303 observations, 14 predictions in the dataset and 2 missing values.
+There are 303 observations, 14 predictions in the data set and 2 missing values.
 
-- age: age in years **continious variable**
+- age: age in years **continuous variable**
 
 - sex: (1 = male; 0 = female) **categorical variable**
 
 - cp: chest pain type **categorical variable**
 
-- trestbps: resting blood pressure (in mm Hg on admission to the hospital) **continious variable**
+- trestbps: resting blood pressure (in mm Hg on admission to the hospital) **continuous variable**
 
-- chol: serum cholestoral in mg/dl **continious variable**
+- chol: serum cholestoral in mg/dl **continuous variable**
 
 - fbs: (fasting blood sugar &gt; 120 mg/dl) (1 = true; 0 = false) **categorical variable**
 
 - restecg: resting electrocardiographic results **categorical variable**
  
-- thalach: maximum heart rate achieved **continious variable**
+- thalach: maximum heart rate achieved **continuous variable**
 
 - exang: exercise induced angina (1 = yes; 0 = no) **categorical variable**
 
-- oldpeak: ST depression induced by exercise relative to rest **continious variable**
+- oldpeak: ST depression induced by exercise relative to rest **continuous variable**
 
 - slope: the slope of the peak exercise ST segment **categorical variable**
 
@@ -43,14 +44,14 @@ There are 303 observations, 14 predictions in the dataset and 2 missing values.
  
 - target: 1 = disease; 0 = not disease **response**
 
-Among the predictors, there are 8 categorical variables and 5 continious variables. We first recoded all the categorical variables with its true meaning for further usage. Then, we removed missing values and changed all charactor variables into factor.
+Among the predictors, there are 8 categorical variables and 5 continuous variables. We first recoded all the categorical variables with its true meaning for further usage. Then, we removed missing values and changed all character variables into factor.
 
 In this report, we aim to built a model to predict whether a person is likely to get heart disease or not. We use cross validation to compare the prediction performance of these models.
 
 
 # Exploratory analysis/visualization
 
-Among the continious variables, thalach/oldpeak/age have very different distribution among those disease and non-disease population. Disease group tend to have higher *thalach* and smaller *oldpeak*.
+Among the continuous variables, thalach/oldpeak/age have very different distribution among those disease and non-disease population. Disease group tend to have higher *thalach* and smaller *oldpeak*.
 
 Among the categorical variables, the distribution of fbs is similar among disease and non-disease groups while others are not similarly distributed. 
 
@@ -64,11 +65,33 @@ knitr::include_graphics("categorical.png")
 
 # Models
 
-This is a binary classification problem. In this report, we mainly focus on the following models: GLM (logistic regression with penelty term), KNN model, Tree model, Random Forest model, Boosting and Support vector machine. We use all predictior into the models.
+This is a binary classification problem. In this report, we mainly focus on the following models: GLM (logistic regression with penalty term), KNN model, Tree model, Random Forest model, Boosting and Support vector machine. We use all predictor into the models. And we set ROC as the metric.
+
+We randomly split the data into 75% train set and 25% test set. We built our model based on the train set and did prediction on the test set. We used repeated CV for models comparison.
 
 ## GLM
 
+Firstly, we use elsetic model, which is a combination with lasso regression and ridge regression. There are two tuning parameters in the model: $\alpha \in [0,1]$: $Ridge: \alpha = 0$; $Lasso: \alpha = 1$ and $\lambda$: the penalty coefficient. 
+
+```{r, echo=FALSE,warning= FALSE, message = FALSE, echo=FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
+plot(glmn.fit.c, xTrans = function(x) log(x))
+```
+
+From the plot, we can see that when $\alpha = 0.2, \lambda = 0.011$, we get the best model with largest ROC. The Accuracy of the best model from GLM is 0.7733. Sensitivity is 0.7805 and Specificity is 0.7647.
+
+```{r, echo=FALSE,warning= FALSE, message = FALSE, echo=FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
+vip_ridge
+```
+
+From the importance plot, we can see the level of ca is the most important feature in prediction the disease status.
+
 ## KNN
+
+We also used unsupervised learning method KNN to model this problem. When using KNN method, it's important to do preProcess: center and scale the data. Then the tuning parameter in KNN method is the number of neighborhood. We choose to tune from 1 to 150. From the plot, when the number of neighborhood is 11, we get the largest ROC. The accuracy of KNN is 0.8533, sensitivity is 0.9024 and specificity : 0.7941
+
+```{r, echo=FALSE,warning= FALSE, message = FALSE, echo=FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
+plot(knn.fit.c)
+```
 
 ## Tree
 
@@ -78,13 +101,16 @@ This is a binary classification problem. In this report, we mainly focus on the 
 
 ## SVM
 
-If there were tuning parameters, how did you pick their values?
+
 Discuss the training/test performance if you have a test data set.
 Which variables play important roles in predicting the response?
-Explain/visualize the final model you select.
 What are the limitations of the models you used (if there are any)? Are the models flexible enough to capture the underlying truth?
 
 
 # Conclusions
+
+## Model comparison
+
+Explain/visualize the final model you select.
 
 What were your findings? Are they what you expect? What insights into the data can you make?
