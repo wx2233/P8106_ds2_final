@@ -11,24 +11,73 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-Describe your data set. Provide proper motivation for your work.
+Heart disease is one of the leading cause of death for both men and women all over the world. Heart disease detection based on typical clinical features is being increasingly critical to population health. It is a desirable way to help people enhance self protection ability and prevent faults. In this report, we built several predictive models to predict the heart disease. 
 
-What questions are you trying to answer?
-How did you prepare and clean the data?
+There are 303 observations, 14 predictions in the dataset and 2 missing values.
+
+- age: age in years **continious variable**
+
+- sex: (1 = male; 0 = female) **categorical variable**
+
+- cp: chest pain type **categorical variable**
+
+- trestbps: resting blood pressure (in mm Hg on admission to the hospital) **continious variable**
+
+- chol: serum cholestoral in mg/dl **continious variable**
+
+- fbs: (fasting blood sugar &gt; 120 mg/dl) (1 = true; 0 = false) **categorical variable**
+
+- restecg: resting electrocardiographic results **categorical variable**
  
+- thalach: maximum heart rate achieved **continious variable**
+
+- exang: exercise induced angina (1 = yes; 0 = no) **categorical variable**
+
+- oldpeak: ST depression induced by exercise relative to rest **continious variable**
+
+- slope: the slope of the peak exercise ST segment **categorical variable**
+
+- ca: 3 = normal; 6 = fixed defect; 7 = reversable defect **categorical variable**
+
+- thal: 3 = normal; 6 = fixed defect; 7 = reversable defect **categorical variable**
+ 
+- target: 1 = disease; 0 = not disease **response**
+
+Among the predictors, there are 8 categorical variables and 5 continious variables. We first recoded all the categorical variables with its true meaning for further usage. Then, we removed missing values and changed all charactor variables into factor.
+
+In this report, we aim to built a model to predict whether a person is likely to get heart disease or not. We use cross validation to compare the prediction performance of these models.
+
 
 # Exploratory analysis/visualization
 
-Is there any interesting structure present in the data?
-What were your findings?
-Here you can use any techniques as long as they are adequately explained. If you cannot find anything interesting, then describe what you tried and show that there isn’t much visible structure. Data science is NOT manipulating the data in some way until you get an answer.
+Among the continious variables, thalach/oldpeak/age have very different distribution among those disease and non-disease population. Disease group tend to have higher *thalach* and smaller *oldpeak*.
 
- 
+Among the categorical variables, the distribution of fbs is similar among disease and non-disease groups while others are not similarly distributed. 
+
+```{r, echo=FALSE,warning= FALSE, message = FALSE, echo=FALSE,out.width='90%', out.height='40%',fig.pos='h', fig.align = "center"}
+knitr::include_graphics("continious.png")
+```
+
+```{r, echo=FALSE,warning= FALSE, message = FALSE, echo=FALSE,out.width='90%', out.height='40%',fig.pos='h', fig.align = "center"}
+knitr::include_graphics("categorical.png")
+```
 
 # Models
 
-What predictor variables did you include?
-What technique did you use? What assumptions, if any, are being made by using this technique?
+This is a binary classification problem. In this report, we mainly focus on the following models: GLM (logistic regression with penelty term), KNN model, Tree model, Random Forest model, Boosting and Support vector machine. We use all predictior into the models.
+
+## GLM
+
+## KNN
+
+## Tree
+
+## Random Forest
+
+## Boosting
+
+## SVM
+
 If there were tuning parameters, how did you pick their values?
 Discuss the training/test performance if you have a test data set.
 Which variables play important roles in predicting the response?
