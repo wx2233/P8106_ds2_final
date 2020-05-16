@@ -215,7 +215,7 @@ rf.pred = predict(rf.fit.c, newdata = data[-rowTrain,],type = "prob")[,1]
 
 ```{r}
 # variable importance
-rf_varImp = barplot(sort(ranger::importance(rf.fit.c$finalModel), decreasing = FALSE), 
+barplot(sort(ranger::importance(rf.fit.c$finalModel), decreasing = FALSE), 
         las = 2, horiz = TRUE, cex.names = 0.7,
         col = colorRampPalette(colors = c("cyan","blue"))(8))
 ```
@@ -259,7 +259,7 @@ gbmBmatrix$byClass[1:2]
 
 ```{r}
 # variable importance
-boost_varImp = summary(gbmB.fit$finalModel, las = 2, cBars = 19, cex.names = 0.6)
+summary(gbmB.fit$finalModel, las = 2, cBars = 19, cex.names = 0.6)
 ```
 
 ```{r}
