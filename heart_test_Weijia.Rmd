@@ -18,6 +18,7 @@ library(DataExplorer)
 library(ggthemes)
 library(GGally)
 library(kableExtra)
+library(patchwork)
 ```
 
 
@@ -31,7 +32,7 @@ data = heart %>%
   mutate(sex = if_else(sex == 1, "male", "female"),
          fbs = if_else(fbs == 1, ">120", "<=120"),
          exang = if_else(exang == 1, "yes" ,"no"),
-         target = if_else(target == 1, "yes", "no"),
+         target = if_else(target == 1, "pos", "neg"),
          cp = case_when(
            cp == 3 ~ "typical angina",
            cp == 1 ~ "atypical angina",
@@ -84,7 +85,21 @@ featurePlot(x = data[, 10:14],
 
 ```{r}
 #ggpairs(data[,1:9])
-plot_bar(data,ggtheme = theme_classic())
+plot_bar(data, ggtheme = theme_classic())
+```
+
+```{r}
+a1 = ggplot(data) + geom_bar(aes(x = sex)) + facet_grid(. ~ target) + ggtitle("sex")
+a2 = ggplot(data) + geom_bar(aes(x = fbs)) + facet_grid(. ~ target) + ggtitle("fbs")
+a3 = ggplot(data) + geom_bar(aes(x = exang)) + facet_grid(. ~ target) + ggtitle("exang")
+a4 = ggplot(data) + geom_bar(aes(x = cp)) + facet_grid(. ~ target) + ggtitle("cp")
+a5 = ggplot(data) + geom_bar(aes(x = restecg)) + facet_grid(. ~ target) + ggtitle("restecg")
+a6 = ggplot(data) + geom_bar(aes(x = slope)) + facet_grid(. ~ target) + ggtitle("slope")
+a7 = ggplot(data) + geom_bar(aes(x = ca)) + facet_grid(. ~ target) + ggtitle("ca")
+a8 = ggplot(data) + geom_bar(aes(x = thal)) + facet_grid(. ~ target) + ggtitle("thal")
+
+all = (a1+a2+a3+a4)/(a5+a6+a7+a8)
+all
 ```
 
 
@@ -120,7 +135,18 @@ plot(glmn.fit.c, xTrans = function(x) log(x))
 
 glmn.fit.c$bestTune
 
-glmn.pred = predict(glmn.fit.c , newdata = data[-rowTrain,],type = "prob")[,2]
+glmn.pred = predict(glmn.fit.c, newdata = data[-rowTrain,],type = "prob")[,2]
+
+test.pred = rep("pos", length(glmn.pred))
+test.pred[glmn.pred<0.5] = "neg"
+
+confusionMatrix(data = as.factor(test.pred),
+                reference = data$target[-rowTrain],
+                positive = "pos")
+
+
+vip_ridge = vip::vip(glmn.fit.c, num_features = 20, method = "model") + 
+  ggtitle("GLM")
 ```
 
 # KNN
@@ -135,8 +161,16 @@ knn.fit.c <- train(target~., data=data[rowTrain,],
                    trControl = ctrl)
 
 plot(knn.fit.c)
+knn.fit.c$bestTune
 
 knn.pred = predict(knn.fit.c, newdata = data[-rowTrain,],type = "prob")[,2]
+
+test.pred = rep("pos", length(knn.pred))
+test.pred[knn.pred<0.5] = "neg"
+
+confusionMatrix(data = as.factor(test.pred),
+                reference = data$target[-rowTrain],
+                positive = "pos")
 ```
 
 ## Tree (tune over cp)
@@ -314,6 +348,6 @@ The support vector machine model with linear kernel performs better with higher 
 
 
 ```{r}
-#save.image(file='test_Weijia.RData')
+# save.image(file='test_Weijia.RData')
 ```
 
