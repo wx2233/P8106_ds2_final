@@ -79,7 +79,7 @@ Firstly, we use elsetic model, which is a combination with lasso regression and 
 plot(glmn.fit.c, xTrans = function(x) log(x))
 ```
 
-From the plot, we can see that when $\alpha = 0.2, \lambda = 0.011$, we get the best model with largest ROC. The Accuracy of the best model from GLM is 0.7733. Sensitivity is 0.7805 and Specificity is 0.7647.
+From the plot, we can see that when $\alpha = 0.2, \lambda = 0.011$, we get the best model with largest AUC. The Accuracy of the best model from GLM is 0.7733. Sensitivity is 0.7805 and Specificity is 0.7647.
 
 ```{r, echo=FALSE,warning= FALSE, message = FALSE, echo=FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
 vip_ridge
@@ -89,22 +89,42 @@ From the importance plot, we can see the level of ca is the most important featu
 
 ## KNN
 
-We also used unsupervised learning method KNN to model this problem. When using KNN method, it's important to do preProcess: center and scale the data. Then the tuning parameter in KNN method is the number of neighborhood. We choose to tune from 1 to 150. From the plot, when the number of neighborhood is 11, we get the largest ROC. The accuracy of KNN is 0.8533, sensitivity is 0.9024 and specificity : 0.7941
+We also used unsupervised learning method KNN to model this problem. When using KNN method, it's important to do preProcess: center and scale the data. Then the tuning parameter in KNN method is the number of neighborhood. We choose to tune from 1 to 150. From the plot, when the number of neighborhood is 11, we get the largest AUC. The accuracy of KNN is 0.8533, sensitivity is 0.9024 and specificity : 0.7941
 
 ```{r, echo=FALSE,warning= FALSE, message = FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
 plot(knn.fit.c)
 ```
 
 ## Tree
+Besides, we apply several tree-based methods to model Heart data, including classification tree, random forests and boosting.First, let's see the result of tree model. For complexity parameter cp, we set it to range from $e^{-10}$ to $e^{-5}$. As the plot shows, the AUC reaches the peak when cp equals to `r rpart.fit.c$bestTune`. The accuracy of the best tree model  is 0.7067, sensitivity is 0.8293 and Specificity is 0.5588. The test error rate is 0.2933.
+
+```{r, echo=FALSE,warning= FALSE, message = FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
+ggplot(rpart.fit.c, highlight = TRUE)
+```
+
+The following plot shows the structure of tree. 
+```{r, echo=FALSE,warning= FALSE, message = FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
+rpart.plot(rpart.fit.c$finalModel)
+```
 
 ## Random Forest
+To use random forest, we tune minimal node size (1:6) and the number of randomly selected predictors (1:6), with Gini index as the criterion for tree growing. As a result, the largest AUC value can be obtaiined when the minimal node size and the number or predictors are set to be 3 and 1, respectively.
+The accuracy, sensitivity and specificity of the best random forest model is 0.8533, 0.9024 and 0.7941, respectively. And the test error is  0.1467.
 
+```{r, echo=FALSE,warning= FALSE, message = FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
+ggplot(rf.fit.c, highlight = TRUE)
+```
 
+The following plot shows the variance importance and it turns out that oldpeak is of the most 
+importance while the resting electrocardiographic results showing abnormality is of the least importance among all variables.
 
+```{r, echo=FALSE,warning= FALSE, message = FALSE, echo=FALSE,out.width='90%', out.height='40%',fig.pos='h', fig.align = "center"}
+knitr::include_graphics("rfvarimp.png")
+```
 
 ## Boosting
 
-In addition, we use boosting model for Heart data. Then we tune some parameters. We choose the number of trees from $(2000,3000,4000)$, the interaction depth from 1 to 6, and the shrinkage parameters $\lambda$ from $(0.001,0.003,0.005)$. And we fix the minimum number of observations in the terminal nodes of the trees 1.  From the plot we find that when the number of trees is 3000, the interaction depth is 6, the shrinkage equals 0.001, we get the largest ROC. The Accuracy of the best model from Boosting is 0.7867, Sensitivity is 0.8049 and Specificity is 0.7647. The test error rate is 0.2133.  
+In addition, we use boosting model for Heart data. Then we tune some parameters. We choose the number of trees from $(2000,3000,4000)$, the interaction depth from 1 to 6, and the shrinkage parameters $\lambda$ from $(0.001,0.003,0.005)$. And we fix the minimum number of observations in the terminal nodes of the trees 1.  From the plot we find that when the number of trees is 3000, the interaction depth is 6, the shrinkage equals 0.001, we get the largest AUC. The Accuracy of the best model from Boosting is 0.7867, Sensitivity is 0.8049 and Specificity is 0.7647. The test error rate is 0.2133.  
 
 ```{r, echo=FALSE,warning= FALSE, message = FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
 ggplot(gbmB.fit, highlight = TRUE)
@@ -117,19 +137,17 @@ knitr::include_graphics("boostvarimp.jpg")
 ```
 
 
-
-
 ## SVM
 
 Finally, we use support vector machine (both linear kernel and radical kernel model) to train the data. 
 
-For linear kernel model, the tuning parameter cost $C$ is chose from $e^{-5}$ to $e$. When $C = 0.115568$, we gain the largest ROC. 
+For linear kernel model, the tuning parameter cost $C$ is chose from $e^{-5}$ to $e$. When $C = 0.115568$, we gain the largest AUC. 
 
 ```{r, echo=FALSE,warning= FALSE, message = FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
 ggplot(svml.fit, highlight = TRUE)
 ```
 
-For radical kernel model, cost $C$ is chose from $e^{-1}$ to $e^4$, $\gamma$(sigma in the plot) is chose from $e^{-6}$ to $e^{-2}$. When $C = 31.32588, \gamma = 0.0094$, we gain the largest ROC. 
+For radical kernel model, cost $C$ is chose from $e^{-1}$ to $e^4$, $\gamma$(sigma in the plot) is chose from $e^{-6}$ to $e^{-2}$. When $C = 31.32588, \gamma = 0.0094$, we gain the largest AUC. 
 
 ```{r, echo=FALSE,warning= FALSE, message = FALSE,out.width='90%', out.height='50%',fig.pos='h', fig.align = "center"}
 ggplot(svmr.fit, highlight = TRUE)
@@ -149,18 +167,15 @@ matr %>% knitr::kable(
   )
 ```
 
+## Model comparison & final model
+```{r}
+bwplot(resamp)
+```
 
+Based on resampling methods, we compare the predictive ability between models. As a result, the support vector machine model with linear kernel has a better predictive performance in terms of AUC and thus selected as the final model to predict heart disease condition. Using test dataset, we evaluate its test performance. The accuracy, sensitivity and specificity of the final model is 0.813, 0.794 and 0.829, respectively.
 
-
-Discuss the training/test performance if you have a test data set.
-Which variables play important roles in predicting the response?
-What are the limitations of the models you used (if there are any)? Are the models flexible enough to capture the underlying truth?
 
 
 # Conclusions
-
-## Model comparison
-
-Explain/visualize the final model you select.
-
 What were your findings? Are they what you expect? What insights into the data can you make?
+

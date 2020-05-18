@@ -1,0 +1,83 @@
+---
+title: "final model"
+author: "xj2249"
+date: "5/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(e1071)
+library(tidyverse)
+load("test_Weijia.RData")
+```
+
+```{r}
+# set.seed(123)
+# linear.tune <- tune.svm(target~., 
+#                         data = data, 
+#                         kernel = "linear", 
+#                         cost = exp(seq(-5,1,len=20)))
+# best.linear <- linear.tune$best.model
+# 
+# # oldpeak~thalach
+# p1 <- plot(best.linear, data, oldpeak~thalach,
+#      slice = list(sex = "male", fbs = "<=120",
+#                   exang = "no", cp = "non-anginal",
+#                   restecg = "normal", slope = "upsloping",
+#                   ca = "0", thal = "normal",age = 56,
+#                   trestbps = 130, chol = 241),
+#      symbolPalette = c("orange","darkblue"),
+#      color.palette = terrain.colors)
+# summary(data)
+# # oldpeak~age
+# p2 <- plot(best.linear, data, oldpeak~age,
+#      slice = list(fbs = "<=120",
+#                   exang = "no", cp = "asymptomatic angina",
+#                   restecg = "normal", slope = "upsloping",
+#                   ca = "0", thal = "normal",sex = "male",
+#                   trestbps = 130, chol = 241,thalach = 153),
+#      symbolPalette = c("orange","darkblue"),
+#      color.palette = terrain.colors)
+# 
+# # oldpeak~chol
+# p3 <- plot(best.linear, data, oldpeak~chol,
+#      slice = list(sex = "male", fbs = "<=120",
+#                   exang = "no", cp = "asymptomatic angina",
+#                   restecg = "normal", slope = "upsloping",
+#                   ca = "0", thal = "normal",thalach = 153,
+#                   trestbps = 130, age = 56),
+#      symbolPalette = c("orange","darkblue"),
+#      color.palette = terrain.colors)
+# 
+# # oldpeak~age
+# plot(best.linear, data, trestbps~age,
+#      slice = list(sex = "male", fbs = "<=120",
+#                   exang = "no", cp = "asymptomatic angina",
+#                   restecg = "normal", slope = "upsloping",
+#                   ca = "0", thal = "normal",age = 56,
+#                   oldpeak = 0.800,chol = 241),
+#      symbolPalette = c("orange","darkblue"),
+#      color.palette = terrain.colors)
+```
+
+```{r}
+prob_yes <- function(object, newdata) {
+  predict(object, newdata = newdata, type = "prob")[, "pos"]
+}
+set.seed(123)  # for reproducibility
+vip(svml.fit, method = "permute" ,train = data[rowTrain,], 
+    target = "target", metric = "auc", reference_class = "pos", 
+    pred_wrapper = prob_yes)
+
+features <- c("ca", "sex"
+              ,"cp","thal",
+              "oldpeak","age")
+pdps <- lapply(features, function(x) {
+  partial(svml.fit, pred.var = x, which.class = 2,  
+          prob = TRUE, plot = TRUE, plot.engine = "ggplot2",)
+})
+
+grid.arrange(grobs = pdps,  ncol = 2, 
+             top="Feature effect plots on probability scale(Disease)")
+```
