@@ -80,4 +80,14 @@ pdps <- lapply(features, function(x) {
 
 grid.arrange(grobs = pdps,  ncol = 2, 
              top="Feature effect plots on probability scale(Disease)")
+
 ```
+
+explain prediction
+```{r}
+library(lime)
+explainer <- lime(data[rowTrain,-1],svml.fit)
+explanation <- explain(data[-rowTrain,-1],explainer,labels = "pos",n_features = 8)
+plot_features(explanation)
+```
+
