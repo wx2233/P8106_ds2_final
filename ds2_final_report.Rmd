@@ -191,3 +191,4 @@ Multiple models, including GLM, KNN, Tree model, Random Forest, Boosting and Sup
 
 Heart disease can be predicted based on some useful predictors, such as (1)Number of major vessels; (2)ST depression induced by exercise relative to rest; (3)Sex; (4)Chest pain type; (5)Thalassemia defect type and etc. Generally, probability of heart disease is higher in people who are female, suffer from typical anginia, fixed defect of thalassemia and have lower number of major blood vessels and low oldpeak value. Besides, the risk of heart disease also increases with age.
 
+This dataset is relatively small and to better predict heart disease, datasets with larger sample size may be needed in the future.
